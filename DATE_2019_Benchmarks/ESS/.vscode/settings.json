@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "system.h": "c",
+        "main.h": "c",
+        "chrono": "c",
+        "limits": "c"
+    }
+}

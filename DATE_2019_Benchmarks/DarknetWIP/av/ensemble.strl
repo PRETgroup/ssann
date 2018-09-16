@@ -1,0 +1,77 @@
+module ensemble:
+
+procedure run_cnn()(integer, integer);
+procedure run_ensemble()(integer);
+
+input start;
+
+loop
+[
+    await start;
+    [
+        % first ensemble
+        [
+            [
+                call run_cnn()(0, 0);
+                ||
+                call run_cnn()(0, 1);
+                ||
+                call run_cnn()(0, 2);
+            ];
+            call run_ensemble()(0);
+        ]
+        ||
+        % second ensemble
+        [
+            [
+                call run_cnn()(1, 0);
+                ||
+                call run_cnn()(1, 1);
+                ||
+                call run_cnn()(1, 2);
+            ];
+            call run_ensemble()(1);
+        ]
+        ||
+        % third ensemble
+        [
+            [
+                call run_cnn()(2, 0);
+                ||
+                call run_cnn()(2, 1);
+                ||
+                call run_cnn()(2, 2);
+            ];
+            call run_ensemble()(2);
+        ]
+        ||
+        % fourth ensemble
+        [
+            [
+                call run_cnn()(3, 0);
+                ||
+                call run_cnn()(3, 1);
+                ||
+                call run_cnn()(3, 2);
+            ];
+            call run_ensemble()(3);
+        ]
+        ||
+        % fifth ensemble
+        [
+            [
+                call run_cnn()(4, 0);
+                ||
+                call run_cnn()(4, 1);
+                ||
+                call run_cnn()(4, 2);
+            ];
+            call run_ensemble()(4);
+        ]
+    ];
+
+    %pause;
+]
+end loop
+
+end module

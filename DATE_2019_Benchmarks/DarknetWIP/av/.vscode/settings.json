@@ -1,0 +1,31 @@
+{
+    "files.associations": {
+        "*.ipp": "c",
+        "cmath": "c",
+        "complex": "c",
+        "cstdlib": "c",
+        "array": "c",
+        "deque": "c",
+        "vector": "c",
+        "plant.h": "c",
+        "unordered_map": "c",
+        "initializer_list": "c",
+        "ratio": "c",
+        "ann_fixed.h": "c",
+        "*.tcc": "c",
+        "fstream": "c",
+        "functional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "sstream": "c",
+        "streambuf": "c",
+        "thread": "c",
+        "tuple": "c",
+        "fix16.h": "c",
+        "ann.h": "c",
+        "controller.h": "c",
+        "ensemble.h": "c",
+        "limits": "c",
+        "typeinfo": "c"
+    }
+}

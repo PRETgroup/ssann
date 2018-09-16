@@ -1,0 +1,229 @@
+function av;
+interface of av {
+    // Objects read by lidar
+    in int32_t lobject0;  // front left
+    in int32_t lobject1;  // front centre
+    in int32_t lobject2;  // front right
+    in int32_t lobject3;  // rear camera
+    in int32_t lobject4;  // front front 
+
+    // Objects output by CNNs
+    in int32_t cobject0;
+    in int32_t cobject1;
+    in int32_t cobject2;
+    in int32_t cobject3;
+    in int32_t cobject4;
+
+    // Confidence of objects output by CNNs
+    in int32_t conf0;
+    in int32_t conf1;
+    in int32_t conf2;
+    in int32_t conf3;
+    in int32_t conf4;
+
+    // Speed of objects read by lidar
+    in int32_t speed0;
+    in int32_t speed1;
+    in int32_t speed2;
+    in int32_t speed3;
+    in int32_t speed4;
+
+    // Direction of objects read by lidar
+    in int32_t dir0;
+    in int32_t dir1;
+    in int32_t dir2;
+    in int32_t dir3;
+    in int32_t dir4;
+
+    // AV statistics (speed, lane, etc...)
+    in int32_t speed;
+    in int32_t prev_speed;
+
+    out bool accelerate;
+    out bool slow_brake;
+    out bool fast_brake;
+    out bool cruise;
+}
+
+policy brake of av {
+    internals {
+        dtimer_t t;
+        int32_t limit := 2;
+    }
+
+    // normal driving state
+    state cruise {
+        // ============ START CNN VIOLATIONS =================
+        // violation if CNNs and lidar different and CNNs not 100% confident
+        -> violation on ((lobject0 < cobject0 or lobject0 > cobject0) and conf0 < 90) recover cobject0 := lobject0;
+        -> violation on ((lobject1 < cobject1 or lobject1 > cobject1) and conf1 < 90) recover cobject1 := lobject1;
+        -> violation on ((lobject2 < cobject2 or lobject2 > cobject2) and conf2 < 90) recover cobject2 := lobject2;
+        -> violation on ((lobject3 < cobject3 or lobject3 > cobject3) and conf3 < 90) recover cobject3 := lobject3;
+        -> violation on ((lobject4 < cobject4 or lobject4 > cobject4) and conf4 < 90) recover cobject4 := lobject4;
+
+        // violation if CNNs and lidar different and CNNs 100% confident
+        -> violation on ((lobject0 < cobject0 or lobject0 > cobject0) and conf0 > 90) recover cobject0 := 3;
+        -> violation on ((lobject1 < cobject1 or lobject1 > cobject1) and conf1 > 90) recover cobject1 := 3;
+        -> violation on ((lobject2 < cobject2 or lobject2 > cobject2) and conf2 > 90) recover cobject2 := 3;
+        -> violation on ((lobject3 < cobject3 or lobject3 > cobject3) and conf3 > 90) recover cobject3 := 3;
+        -> violation on ((lobject4 < cobject4 or lobject4 > cobject4) and conf4 > 90) recover cobject4 := 3;
+        // change lobject to 3 too
+        -> violation on ((lobject0 < cobject0 or lobject0 > cobject0) and conf0 > 90) recover lobject0 := 3;
+        -> violation on ((lobject1 < cobject1 or lobject1 > cobject1) and conf1 > 90) recover lobject1 := 3;
+        -> violation on ((lobject2 < cobject2 or lobject2 > cobject2) and conf2 > 90) recover lobject2 := 3;
+        -> violation on ((lobject3 < cobject3 or lobject3 > cobject3) and conf3 > 90) recover lobject3 := 3;
+        -> violation on ((lobject4 < cobject4 or lobject4 > cobject4) and conf4 > 90) recover lobject4 := 3;
+        // ============ END CNN VIOLATIONS =================
+
+        // violation if braking for no reason 
+        -> violation on ((cobject1 = 0 and cobject4 = 0 and fast_brake) or (fast_brake and speed = 0)) recover fast_brake := 0;
+        -> violation on ((cobject1 = 0 and cobject4 = 0 and slow_brake) or (slow_brake and speed = 0)) recover slow_brake := 0;
+        -> violation on (speed = 0 and !accelerate) recover accelerate := 1;
+
+        // violation if car behind will hit us
+        -> violation on (cobject3 = 2 and speed3 = 2 and speed = 1 and fast_brake) recover fast_brake := 0;
+
+        // violation if accelerating into pedestrian in front front -> start brake cycle
+        -> violation on ((cobject4 = 1 or cobject4 = 3) and (dir4 = 0 or dir4 = 2 or speed4 = 0) and speed > 0 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject4 = 1 or cobject4 = 3) and (dir4 = 0 or dir4 = 2 or speed4 = 0) and speed > 1 and fast_brake) recover fast_brake := 0;
+        -> violation on ((cobject4 = 1 or cobject4 = 3) and (dir4 = 0 or dir4 = 2 or speed4 = 0) and speed > 1 and !slow_brake) recover slow_brake := 1;
+
+        // violation if accelerating into pedestrian on left side -> start brake cycle
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 1 and speed > 0 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 1 and speed > 1 and fast_brake) recover fast_brake := 0;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 1 and speed > 1 and !slow_brake) recover slow_brake := 1;
+
+        // violation if accelerating into pedestrian on right side -> start brake cycle
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 1 and speed > 0 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 1 and speed > 1 and fast_brake) recover fast_brake := 0;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 1 and speed > 1 and !slow_brake) recover slow_brake := 1;
+
+        // violation if accelerating into vehicle in front
+        -> violation on (cobject1 = 2 and speed >= speed1 and accelerate) recover accelerate := 0;
+        -> violation on (cobject1 = 2 and speed > speed1 and fast_brake) recover fast_brake := 0;
+        -> violation on (cobject1 = 2 and speed > speed1 and !slow_brake) recover slow_brake := 1;
+
+        // violation if accelerating into vehicle in front front
+        -> violation on (cobject4 = 2 and speed >= speed4 and accelerate) recover accelerate := 0;
+        -> violation on (cobject4 = 2 and speed > speed4 and fast_brake) recover fast_brake := 0;
+        -> violation on (cobject4 = 2 and speed > speed4 and !slow_brake) recover slow_brake := 1;
+
+        // violation if accelerating at max speed
+        -> violation on (speed = 2 and accelerate) recover accelerate := 0;
+
+        // violation if accelerating into pedestrian (or unknown) in front -> remove acceleration, remove slow brake, add fast brake
+        // pedestrian came from in front
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and accelerate) recover accelerate := 0;
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and speed = 0 and !slow_brake) recover slow_brake := 1;
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and speed > 0 and !fast_brake) recover fast_brake := 1;
+        // pedestrian came from left side
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and speed = 0 and !slow_brake) recover slow_brake := 1;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and speed > 0 and !fast_brake) recover fast_brake := 1;
+        // pedestrian came from right side
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and speed = 0 and !slow_brake) recover slow_brake := 1;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and speed > 0 and !fast_brake) recover fast_brake := 1;
+
+        // transisition back to this state if everything ok and no fast brake
+        -> cruise on (!fast_brake) and 
+                    !(slow_brake and cobject4 = 1 and speed4 = 0) and 
+                    !(slow_brake and cobject4 = 3 and speed4 = 0) and 
+                    !(slow_brake and cobject4 = 1 and dir4 = 2) and 
+                    !(slow_brake and cobject4 = 3 and dir4 = 2) and 
+                    !(slow_brake and cobject4 = 1 and dir4 = 0) and 
+                    !(slow_brake and cobject4 = 3 and dir4 = 0) and 
+                    !(slow_brake and cobject0 = 1 and dir0 = 1 and speed0 > 0) and 
+                    !(slow_brake and cobject0 = 3 and dir0 = 1 and speed0 > 0) and 
+                    !(slow_brake and cobject2 = 1 and dir2 = 3 and speed2 > 0) and 
+                    !(slow_brake and cobject2 = 3 and dir2 = 3 and speed2 > 0);
+
+        // transition to brake if fast brake occurred or slow brake with pedestrian
+        -> brake on (fast_brake) or 
+                    (slow_brake and cobject4 = 1 and speed4 = 0) or 
+                    (slow_brake and cobject4 = 3 and speed4 = 0) or 
+                    (slow_brake and cobject4 = 1 and dir4 = 2) or 
+                    (slow_brake and cobject4 = 3 and dir4 = 2) or 
+                    (slow_brake and cobject4 = 1 and dir4 = 0) or 
+                    (slow_brake and cobject4 = 3 and dir4 = 0) or 
+                    (slow_brake and cobject0 = 1 and dir0 = 1 and speed0 > 0) or 
+                    (slow_brake and cobject0 = 3 and dir0 = 1 and speed0 > 0) or 
+                    (slow_brake and cobject2 = 1 and dir2 = 3 and speed2 > 0) or 
+                    (slow_brake and cobject2 = 3 and dir2 = 3 and speed2 > 0): t := 0;
+    }
+
+    // brake two ticks in a row if pedestrian in distance or on sides
+    state brake {        
+        // ============ START CNN VIOLATIONS =================
+        // violation if CNNs and lidar different and CNNs not 100% confident
+        -> violation on ((lobject0 < cobject0 or lobject0 > cobject0) and conf0 < 90) recover cobject0 := lobject0;
+        -> violation on ((lobject1 < cobject1 or lobject1 > cobject1) and conf1 < 90) recover cobject1 := lobject1;
+        -> violation on ((lobject2 < cobject2 or lobject2 > cobject2) and conf2 < 90) recover cobject2 := lobject2;
+        -> violation on ((lobject3 < cobject3 or lobject3 > cobject3) and conf3 < 90) recover cobject3 := lobject3;
+        -> violation on ((lobject4 < cobject4 or lobject4 > cobject4) and conf4 < 90) recover cobject4 := lobject4;
+
+        // violation if CNNs and lidar different and CNNs 100% confident
+        -> violation on ((lobject0 < cobject0 or lobject0 > cobject0) and conf0 > 90) recover cobject0 := 3;
+        -> violation on ((lobject1 < cobject1 or lobject1 > cobject1) and conf1 > 90) recover cobject1 := 3;
+        -> violation on ((lobject2 < cobject2 or lobject2 > cobject2) and conf2 > 90) recover cobject2 := 3;
+        -> violation on ((lobject3 < cobject3 or lobject3 > cobject3) and conf3 > 90) recover cobject3 := 3;
+        -> violation on ((lobject4 < cobject4 or lobject4 > cobject4) and conf4 > 90) recover cobject4 := 3;
+        // change lobject to 3 too
+        -> violation on ((lobject0 < cobject0 or lobject0 > cobject0) and conf0 > 90) recover lobject0 := 3;
+        -> violation on ((lobject1 < cobject1 or lobject1 > cobject1) and conf1 > 90) recover lobject1 := 3;
+        -> violation on ((lobject2 < cobject2 or lobject2 > cobject2) and conf2 > 90) recover lobject2 := 3;
+        -> violation on ((lobject3 < cobject3 or lobject3 > cobject3) and conf3 > 90) recover lobject3 := 3;
+        -> violation on ((lobject4 < cobject4 or lobject4 > cobject4) and conf4 > 90) recover lobject4 := 3;
+        // ============ END CNN VIOLATIONS =================
+
+        // violation if accelerating into pedestrian (or unknown) in front -> remove acceleration, remove slow brake, add fast brake
+        // pedestrian came from in front
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and accelerate) recover accelerate := 0;
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and speed = 0 and !slow_brake) recover slow_brake := 1;
+        -> violation on ((cobject1 = 1 or cobject1 = 3) and speed > 0 and !fast_brake) recover fast_brake := 1;
+        // pedestrian came from left side
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and speed = 0 and !slow_brake) recover slow_brake := 1;
+        -> violation on ((cobject0 = 1 or cobject0 = 3) and dir0 = 1 and speed0 = 2 and speed > 0 and !fast_brake) recover fast_brake := 1;
+        // pedestrian came from right side
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and accelerate) recover accelerate := 0;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and speed = 0 and !slow_brake) recover slow_brake := 1;
+        -> violation on ((cobject2 = 1 or cobject2 = 3) and dir2 = 3 and speed2 = 2 and speed > 0 and !fast_brake) recover fast_brake := 1;
+
+        // violation if not braked long enough
+        // pedestrian came from in front
+        -> violation on ((t < limit) and accelerate) recover accelerate := 0;
+        -> violation on ((t < limit) and speed > 0 and slow_brake) recover slow_brake := 0;
+        -> violation on ((t < limit) and speed > 0 and !fast_brake) recover fast_brake := 1;
+
+        // violation if doing nothing for no reason
+        -> violation on ((t >= limit) and cobject1 = 0 and !accelerate) recover accelerate := 1; 
+        -> violation on ((t >= limit) and cobject1 = 2 and speed2 > 0 and !accelerate) recover accelerate := 1; 
+        -> violation on ((t >= limit) and cobject1 = 0 and slow_brake) recover slow_brake := 0; 
+        -> violation on ((t >= limit) and cobject1 = 2 and speed2 > 0 and slow_brake) recover slow_brake := 0; 
+        -> violation on ((t >= limit) and cobject1 = 0 and fast_brake) recover fast_brake := 0; 
+        -> violation on ((t >= limit) and cobject1 = 2 and speed2 > 0 and fast_brake) recover fast_brake := 0; 
+
+        // violation if accelerating into vehicle in front
+        -> violation on (cobject1 = 2 and speed >= speed1 and accelerate) recover accelerate := 0;
+        -> violation on (cobject1 = 2 and speed > speed1 and fast_brake) recover fast_brake := 0;
+        -> violation on (cobject1 = 2 and speed > speed1 and !slow_brake) recover slow_brake := 1;
+
+        // violation if accelerating into vehicle in front front
+        -> violation on (cobject4 = 2 and speed >= speed4 and accelerate) recover accelerate := 0;
+        -> violation on (cobject4 = 2 and speed > speed4 and fast_brake) recover fast_brake := 0;
+        -> violation on (cobject4 = 2 and speed > speed4 and !slow_brake) recover slow_brake := 1;
+
+        // transition to cruise only if safe
+        -> cruise on (t >= limit and accelerate);
+
+        // transition back here if not safe
+        -> brake on ((t < limit or fast_brake or slow_brake) and !accelerate): t := 0;
+    }
+}

@@ -1,0 +1,39 @@
+%%%%%%%%%%%% ESS MODULE %%%%%%%%%%%%%%
+module ess:
+
+% data handling declarations
+function getFuturePrice(): float;
+function getPreviousDemand(): float;
+
+procedure runQLayer1()(float, float, float, float, float);
+procedure runQLayer2()();
+function getBatteryWatts(float): float;
+
+% interface declarations
+input price: float, demand: float, soc: float;
+output watts: float;
+
+% variable declarations
+var future_price: float, previous_demand: float in
+
+loop
+    % get system inputs
+    [
+        future_price := getFuturePrice();
+        ||
+        previous_demand := getPreviousDemand();
+    ];
+    pause;
+
+    call runQLayer1()(future_price, previous_demand, ?price, ?demand, ?soc);
+    pause;
+    call runQLayer2()();
+
+    emit watts(getBatteryWatts(?demand));
+    pause;
+end loop
+
+end var
+
+end module
+

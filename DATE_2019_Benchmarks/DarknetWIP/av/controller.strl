@@ -1,0 +1,16 @@
+module controller:
+
+procedure run_front()();
+procedure run_sides()();
+procedure run_back()();
+procedure run_fin()();
+
+input start;
+output done;
+
+loop
+    await start;
+    call run_fin()();
+end loop
+
+end module

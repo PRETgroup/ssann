@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "blas.h": "c",
+        "utils.h": "c",
+        "data.h": "c",
+        "network.h": "c",
+        "image.h": "c",
+        "connected_layer.h": "c",
+        "gru_layer.h": "c",
+        "logistic_layer.h": "c",
+        "chrono": "c",
+        "array": "c",
+        "deque": "c",
+        "vector": "c",
+        "cmath": "c",
+        "typeinfo": "c"
+    }
+}

@@ -1,0 +1,36 @@
+module playgame:
+
+% data handling declarations
+procedure rabbit_decide(integer, integer)();
+procedure wolf1_decide(integer, integer)();
+procedure wolf2_decide(integer, integer)();
+
+input decide;
+output rx: integer, ry: integer, w1x: integer, w1y: integer, w2x: integer, w2y: integer;
+
+% rabbit decision thread
+loop
+	var temprx: integer, tempry: integer, tempw1x: integer, tempw1y: integer, tempw2x: integer, tempw2y: integer in
+		await decide;
+		[
+			call rabbit_decide(temprx, tempry)();
+			||
+			call wolf1_decide(tempw1x, tempw1y)();
+			||
+			call wolf2_decide(tempw2x, tempw2y)();
+		];
+
+		% emit outputs
+		emit rx(temprx);
+		emit ry(tempry);
+		
+		emit w1x(tempw1x);
+		emit w1y(tempw1y);
+
+		emit w2x(tempw2x);
+		emit w2y(tempw2y);
+
+	end var
+end loop
+
+end module

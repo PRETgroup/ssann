@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "main.h": "c",
+        "stdio.h": "c",
+        "array": "c",
+        "deque": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "initializer_list": "c",
+        "playgame.h": "c",
+        "f_move.h": "c",
+        "*.tcc": "c"
+    }
+}

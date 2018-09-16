@@ -1,0 +1,6 @@
+classes=7
+train  = ../data/gtsrb/tmr/train.list
+valid  = ../data/gtsrb/tmr/test.list
+labels = ../data/gtsrb/tmr/labels.txt
+backup = backup/
+top=2

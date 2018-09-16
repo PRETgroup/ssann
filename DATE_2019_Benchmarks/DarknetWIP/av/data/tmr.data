@@ -1,0 +1,6 @@
+classes=3
+train  = ../data/voc/tmr/train.list
+valid  = ../data/voc/tmr/test.list
+labels = ../data/voc/tmr/labels.txt
+backup = backup/
+top=2
