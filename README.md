@@ -20,9 +20,9 @@ termed SSANNs, using runtime enforcement to enforce safety policies for each neu
 Each SSANN is formally defined, and both its neural network and enforer both follow synchronous semantics. 
 The neural networks, defined as synchronous artificial neural networks (SANNs) [2] are created in 
 Esterel and C using our own custom code for basic feedforward ANNs, 
-while the Darknet library is used for convolutional neural networks (CNNs).
+while the Darknet library [3] is used for convolutional neural networks (CNNs).
 
-The enforcers follows semantics described in [3], are are bi-directional enforcers. The policies implemented by them are defined by safety automata.
+The enforcers follows semantics described in [4], are are bi-directional enforcers. The policies implemented by them are defined by safety automata.
 
 As this is the first work on safe synchronous neural networks,
 there are some limitations and hence several avenues
@@ -37,6 +37,8 @@ intelligence,” arXiv preprint arXiv:1606.08514, 2016.
 for cyber-physical systems,” in MEMOCODE ’18 Proceedings of the
 16th ACM-IEEE International Conference on Formal Methods and
 Models for System Design, 2018.
-3. S. Pinisetty, P. Roop, S. Smyth, N. Allen, S. Tripakis, and R. von
+3. J. Redmon, “Darknet: Open source neural networks in c,” http://pjreddie.
+com/darknet/, 2013–2016.
+4. S. Pinisetty, P. Roop, S. Smyth, N. Allen, S. Tripakis, and R. von
 Hanxleden, “Runtime enforcement of cyber-physical systems,” vol. 16,
 pp. 1–25, 09 2017.
